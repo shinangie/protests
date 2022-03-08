@@ -9,24 +9,28 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 
-ogacled <- read.csv("ogacled.csv")
+acled <- read.csv("data/acled.csv")
+load("data/hansonsigman.RData")
+hs <- table
+rm(table)
 
-# table(is.na(ogacled) == TRUE)
+# table(is.na(acled) == TRUE)
 # 
-# table(ogacled$sub_event_type)
-# table(ogacled$source_scale)
-# table(ogacled$time_precision)
-# table(ogacled$geo_precision)
-# table(ogacled$region)
-# table(ogacled$inter1)
+# table(acled$sub_event_type)
+# table(acled$source_scale)
+# table(acled$time_precision)
+# table(acled$geo_precision)
+# table(acled$region)
+# table(acled$inter1)
 # 
-# table(ogacled$sub_event_type, acled$inter2)
+# table(acled$sub_event_type, acled$inter2)
 # 
-# summary(ogacled$year)
-# summary(ogacled$fatalities)
-# summary(ogacled$interaction)
+# summary(acled$year)
+# summary(acled$fatalities)
+# summary(acled$interaction)
 # 
-# names(ogacled)
+# names(acled)
+names(hs)
 ```
 
 ## Preprocessing & Planning Instructions
@@ -40,8 +44,10 @@ Deliverables:
 # ML Strategy
 
 Why are our project’s chosen ML approaches reasonable for this application?
+Our research question is to predict law enforcement intervention in protests, so we are using the 500k+-row ACLED dataset of protests around the world as well as the Hanson and Sigman dataset of state capacity covariates (traditionally used in comparative politics). Put together, these datasets will hopefully provide us with enough observations and variables to predict whether or not law enforcement will intervene in protests. For our purposes, therefore, we will use logistic regression, k-Nearest Neighbors, decision trees, and Support Vector Machines as our selected machine learning approaches—these classification methods will help us get a feel for what approaches are the most accurate for our data.
 
 What are the assumptions made in using these approaches?
+
 
 Why are these approaches better to use than other alternatives?
 
@@ -49,8 +55,9 @@ Why are these approaches better to use than other alternatives?
 # Cleaning Data
 
 ```{r clean}
-acled <- ogacled %>%
-  select(ptype = sub_event_type, fatalities,
+acledm <- acled %>%
+  select(iso3,
+         ptype = sub_event_type, fatalities,
          timep = time_precision, 
          date = event_date, year, 
          geop = geo_precision, region, country, location, latitude, longitude,
@@ -58,8 +65,14 @@ acled <- ogacled %>%
          actor2, assoc2 = assoc_actor_2, inter2, interaction,
          admin1, admin2, admin3, 
          source, source_scale, notes) %>% 
+  filter(year >= 2000) %>% 
   mutate(date = as.Date(date, "%d %b %Y"))
 
-write.csv(acled, file = "acled.csv")
+hsm <- hs %>% 
+  select(-c(cntrynum, country, year, iso2, ccode, scode))
+
+protests <- left_join(acledm, hsm, by = "iso3")
+
+write.csv(protests, file = "data/protests.csv")
 ```
 
