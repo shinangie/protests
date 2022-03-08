@@ -61,12 +61,5 @@ acled <- ogacled %>%
   mutate(date = as.Date(date, "%d %b %Y"))
 
 write.csv(acled, file = "acled.csv")
-
-# terminal commands for pushing large data files
-# brew install git-lfs
-# git lfs track "ogacled.csv"
-# git add .gitattributes
-# git lfs track "acled.csv"
-# git add .gitattributes
 ```
 
