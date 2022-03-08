@@ -1,0 +1,72 @@
+---
+title: "Predicting Law Enforcement Intervention in Protests"
+subtitle: "GOV 2018 Final Project"
+author: "Alexandra Norris and Angie Shin"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+
+ogacled <- read.csv("ogacled.csv")
+
+# table(is.na(ogacled) == TRUE)
+# 
+# table(ogacled$sub_event_type)
+# table(ogacled$source_scale)
+# table(ogacled$time_precision)
+# table(ogacled$geo_precision)
+# table(ogacled$region)
+# table(ogacled$inter1)
+# 
+# table(ogacled$sub_event_type, acled$inter2)
+# 
+# summary(ogacled$year)
+# summary(ogacled$fatalities)
+# summary(ogacled$interaction)
+# 
+# names(ogacled)
+```
+
+## Preprocessing & Planning Instructions
+
+Conduct preprocessing of the data using clean, replicable code with informative comments for readers to effortlessly read and learn from. Explain clearly (so colleagues can understand you) why your project’s chosen ML approach (or approaches) is reasonable for this application (pros and cons) as well as the assumptions made in using the approach and why it is a better approach to use than possible suggested alternatives.
+
+Deliverables:
+* Selected ML strategy (or strategies)
+* Preprocessing and cleaning code; cleaned data ready for analysis
+
+# ML Strategy
+
+Why are our project’s chosen ML approaches reasonable for this application?
+
+What are the assumptions made in using these approaches?
+
+Why are these approaches better to use than other alternatives?
+
+
+# Cleaning Data
+
+```{r clean}
+acled <- ogacled %>%
+  select(ptype = sub_event_type, fatalities,
+         timep = time_precision, 
+         date = event_date, year, 
+         geop = geo_precision, region, country, location, latitude, longitude,
+         actor1, assoc1 = assoc_actor_1, inter1, 
+         actor2, assoc2 = assoc_actor_2, inter2, interaction,
+         admin1, admin2, admin3, 
+         source, source_scale, notes) %>% 
+  mutate(date = as.Date(date, "%d %b %Y"))
+
+write.csv(acled, file = "acled.csv")
+
+# terminal commands for pushing large data files
+# brew install git-lfs
+# git lfs track "ogacled.csv"
+# git add .gitattributes
+# git lfs track "acled.csv"
+# git add .gitattributes
+```
+
