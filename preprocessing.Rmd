@@ -30,7 +30,7 @@ rm(table)
 # summary(acled$interaction)
 # 
 # names(acled)
-names(hs)
+# names(hs)
 ```
 
 ## Preprocessing & Planning Instructions
@@ -65,14 +65,34 @@ acledm <- acled %>%
          actor2, assoc2 = assoc_actor_2, inter2, interaction,
          admin1, admin2, admin3, 
          source, source_scale, notes) %>% 
-  filter(year >= 2000) %>% 
+  # filter(year >= 2000) %>% 
   mutate(date = as.Date(date, "%d %b %Y"))
 
 hsm <- hs %>% 
-  select(-c(cntrynum, country, year, iso2, ccode, scode))
+  select(-c(cntrynum, country, iso2, ccode, scode))
 
-protests <- left_join(acledm, hsm, by = "iso3")
+# split up data by year to store in github
+# limit: 100 mb ~ 150k rows
 
-write.csv(protests, file = "data/protests.csv")
+protests2022 <- left_join(acledm[acledm$year == 2022, ], hsm, 
+                          by = c("iso3", "year")) # 19579
+protests2021 <- left_join(acledm[acledm$year == 2021, ], hsm, 
+                      by = c("iso3", "year")) # 153292
+protests2021a <- protests2021[1:(0.5*nrow(protests2021)), ] # 76646
+protests2021b <- protests2021[(1 + 0.5*nrow(protests2021)):nrow(protests2021), ] # 76646
+protests2020 <- left_join(acledm[acledm$year == 2020, ], hsm,
+                      by = c("iso3", "year")) # 137247
+protests1819 <- left_join(acledm[acledm$year %in% 2018:2019, ], hsm,
+                      by = c("iso3", "year")) # 149608
+protests9717 <- left_join(acledm[acledm$year %in% 1997:2017, ], hsm,
+                      by = c("iso3", "year")) # 101840
+
+# export
+write.csv(protests2022, file = "data/protests2022.csv")
+write.csv(protests2021a, file = "data/protests2021a.csv")
+write.csv(protests2021b, file = "data/protests2021b.csv")
+write.csv(protests2020, file = "data/protests2020.csv")
+write.csv(protests1819, file = "data/protests1819.csv")
+write.csv(protests9717, file = "data/protests9717.csv")
 ```
 
