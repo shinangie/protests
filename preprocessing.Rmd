@@ -87,5 +87,6 @@ acled <- acled %>%
 ```{r merge}
 protests <- left_join(acled, wdi, by = c("iso3", "year"))
 write.csv(protests, file = "data/protests")
+# data accessible in private google drive folder
 ```
 
