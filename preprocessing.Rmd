@@ -8,29 +8,6 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-
-acled <- read.csv("data/acled.csv")
-# load("data/hansonsigman.RData")
-# hs <- table
-# rm(table)
-
-# table(is.na(acled) == TRUE)
-# 
-# table(acled$sub_event_type)
-# table(acled$source_scale)
-# table(acled$time_precision)
-# table(acled$geo_precision)
-# table(acled$region)
-# table(acled$inter1)
-# 
-# table(acled$sub_event_type, acled$inter2)
-# 
-# summary(acled$year)
-# summary(acled$fatalities)
-# summary(acled$interaction)
-# 
-# names(acled)
-# names(hs)
 ```
 
 ## Preprocessing & Planning Instructions
@@ -55,28 +32,46 @@ Why are these approaches better to use than other alternatives?
 # Cleaning Data
 
 
-```{r}
-
+```{r wdi}
 # load in different World Bank indicators
 
 # world development indicators
 
 wdi <- read_csv("data/WDIData.csv") %>%
  rename(country_name = `Country Name`,
-         country_code = `Country Code`,
+         iso3 = `Country Code`,
          indicator_code = `Indicator Code`) %>%
-  select(country_name, country_code, indicator_code, `1997`, `1998`, `1999`, `2000`, `2001`, `2002`, `2003`,`2004`, `2005`, `2006`, `2007`,`2008`,`2009`,`2010`,`2011`,`2012`,`2013`,`2014`,`2015`,`2016`,`2017`,`2018`,`2019`,`2020`) %>%
+  select(iso3, indicator_code, `1997`, `1998`, `1999`, `2000`, `2001`, `2002`, `2003`,`2004`, `2005`, `2006`, `2007`,`2008`,`2009`,`2010`,`2011`,`2012`,`2013`,`2014`,`2015`,`2016`,`2017`,`2018`,`2019`,`2020`) %>%
   pivot_longer(cols = c(`1997`, `1998`, `1999`, `2000`, `2001`, `2002`, `2003`,`2004`, `2005`, `2006`, `2007`,`2008`,`2009`,`2010`,`2011`,`2012`,`2013`,`2014`,`2015`,`2016`,`2017`,`2018`,`2019`,`2020`), names_to = "year", values_to = "value")  %>%
   na.omit() %>%
   pivot_wider(names_from = indicator_code, values_from = value) %>%
-  rename(iso3 = country_code) %>%
+  mutate(year = as.integer(year)) %>%
   # remove non-countries
   slice(1153:6360)
 
 ```
 
-```{r clean}
-acledm <- acled %>%
+```{r acled}
+acled <- read.csv("data/acled.csv")
+
+# table(is.na(acled) == TRUE)
+# 
+# table(acled$sub_event_type)
+# table(acled$source_scale)
+# table(acled$time_precision)
+# table(acled$geo_precision)
+# table(acled$region)
+# table(acled$inter1)
+# 
+# table(acled$sub_event_type, acled$inter2)
+# 
+# summary(acled$year)
+# summary(acled$fatalities)
+# summary(acled$interaction)
+# 
+# names(acled)
+
+acled <- acled %>%
   select(iso3,
          ptype = sub_event_type, fatalities,
          timep = time_precision, 
@@ -86,40 +81,11 @@ acledm <- acled %>%
          actor2, assoc2 = assoc_actor_2, inter2, interaction,
          admin1, admin2, admin3, 
          source, source_scale, notes) %>% 
-  # filter(year >= 2000) %>% 
   mutate(date = as.Date(date, "%d %b %Y"))
-
-# hsm <- hs %>% 
-#   select(-c(cntrynum, country, iso2, ccode, scode))
-
-wdi <- wdi %>%
-  select(-c(country_name))
-
-# split up data by year to store in github
-# limit: 100 mb ~ 150k rows
-
-protests2022 <- left_join(acledm[acledm$year == 2022, ], wdi, 
-                          by = c("iso3", "year")) # 19579
-protests2021 <- left_join(acledm[acledm$year == 2021, ], wdi, 
-                      by = c("iso3", "year")) # 153292
-protests2021a <- protests2021[1:(0.5*nrow(protests2021)), ] # 76646
-protests2021b <- protests2021[(1 + 0.5*nrow(protests2021)):nrow(protests2021), ] # 76646
-protests2020 <- left_join(acledm[acledm$year == 2020, ], wdi,
-                      by = c("iso3", "year")) # 137247
-protests1819 <- left_join(acledm[acledm$year %in% 2018:2019, ], wdi,
-                      by = c("iso3", "year")) # 149608
-protests9717 <- left_join(acledm[acledm$year %in% 1997:2017, ], wdi,
-                      by = c("iso3", "year")) # 101840
-
-
-
-# export
-write.csv(protests2022, file = "data/protests2022.csv")
-write.csv(protests2021a, file = "data/protests2021a.csv")
-write.csv(protests2021b, file = "data/protests2021b.csv")
-write.csv(protests2020, file = "data/protests2020.csv")
-write.csv(protests1819, file = "data/protests1819.csv")
-write.csv(protests9717, file = "data/protests9717.csv")
 ```
 
+```{r merge}
+protests <- left_join(acled, wdi, by = c("iso3", "year"))
+write.csv(protests, file = "data/protests")
+```
 
