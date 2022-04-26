@@ -13,12 +13,12 @@ library(rpart.plot)
 library(randomForest) 
 library(infer) 
 
-library(caret) # for CV folds and data splitting
-library(ROCR) # for diagnostics and ROC plots/stats
-library(pROC) # same as ROCR
-library(stepPlr) # Firth's rare events logistic regression ("plr") implemented by caret
-library(doMC) # for using multiple processor cores
-library(xtable) # for writing Table 1 in Latex
+library(caret)
+library(ROCR) 
+library(pROC) 
+library(stepPlr) 
+library(doMC) 
+library(xtable) 
 
 rm(list=ls())
 
@@ -26,7 +26,9 @@ rm(list=ls())
 proj.seed <- 202202
 
 # read in data
-pdata <- read.csv("plasso.csv") %>% na.omit
+pdata <- read.csv("plasso.csv") %>% 
+  select(-X) %>% 
+  na.omit()
 ```
 
 ```{r}
@@ -37,7 +39,7 @@ logistic_mod <- logistic_reg() %>%
   set_engine("glm") 
 
 logistic_fit <- fit(logistic_mod,
-                    factor(ptype) ~ timep + year + electricity,
+                    factor(ptype) ~ year + timep + electricity + birthrate + deathrate + fertility + lifeexpf,
                     data = pdata)
 lfitdf <- logistic_fit %>%
   tidy(conf.int = TRUE) %>%
@@ -50,7 +52,7 @@ tree_mod <- decision_tree() %>%
   set_mode("classification")
 
 house_region_tree <- fit(tree_mod,
-                         factor(ptype) ~ timep + year + electricity,
+                         factor(ptype) ~ year + timep + electricity + birthrate + deathrate + fertility + lifeexpf,
                     data = pdata)
 
 hrtfitdf <- house_region_tree$fit %>%
@@ -62,7 +64,7 @@ forest_mod <- rand_forest() %>%
   set_mode("classification")
 
 house_forest <- fit(forest_mod,
-                    factor(ptype) ~ timep + year + electricity,
+                    factor(ptype) ~ year + timep + electricity + birthrate + deathrate + fertility + lifeexpf,
                     data = pdata)
 
 tibble(error = house_forest$fit$err.rate[, "OOB"],
@@ -70,5 +72,9 @@ tibble(error = house_forest$fit$err.rate[, "OOB"],
   ggplot(aes(x = trees, y = error)) +
   geom_line() +
   theme_classic()
+```
+
+```{r}
+
 ```
 
