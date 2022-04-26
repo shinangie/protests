@@ -1,0 +1,76 @@
+---
+title: 'Random Forests'
+author: 'Angie Shin'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(tidymodels)
+library(rpart.plot)
+library(randomForest) 
+library(infer) 
+
+library(caret) # for CV folds and data splitting
+library(ROCR) # for diagnostics and ROC plots/stats
+library(pROC) # same as ROCR
+library(stepPlr) # Firth's rare events logistic regression ("plr") implemented by caret
+library(doMC) # for using multiple processor cores
+library(xtable) # for writing Table 1 in Latex
+
+rm(list=ls())
+
+# define seed
+proj.seed <- 202202
+
+# read in data
+pdata <- read.csv("plasso.csv") %>% na.omit
+```
+
+```{r}
+# logistic model (for comparison)
+logistic_mod <- logistic_reg() %>%
+  set_engine("glm") 
+
+logistic_fit <- fit(logistic_mod,
+                    factor(ptype) ~ timep + year + electricity,
+                    data = pdata)
+lfitdf <- logistic_fit %>%
+  tidy(conf.int = TRUE) %>%
+  select(term, estimate, conf.low, conf.high)
+
+# tree model
+tree_mod <- decision_tree() %>%
+  set_engine("rpart",
+             model = TRUE) %>%
+  set_mode("classification")
+
+house_region_tree <- fit(tree_mod,
+                         factor(ptype) ~ timep + year + electricity,
+                    data = pdata)
+
+hrtfitdf <- house_region_tree$fit %>%
+  prp(extra = 6, varlen = 0, faclen = 0)
+
+# forest model
+forest_mod <- rand_forest() %>%
+  set_engine("randomForest") %>%
+  set_mode("classification")
+
+house_forest <- fit(forest_mod,
+                    factor(ptype) ~ timep + year + electricity,
+                    data = pdata)
+
+tibble(error = house_forest$fit$err.rate[, "OOB"],
+       trees = 1:500) %>%
+  ggplot(aes(x = trees, y = error)) +
+  geom_line() +
+  theme_classic()
+```
+
+```{r}
+
+```
+

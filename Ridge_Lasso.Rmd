@@ -1,0 +1,122 @@
+---
+title: "Ridge and Lasso"
+author: "Alexandra Norris"
+date: "4/19/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+# rm(list=ls())
+library(ISLR)
+library(glmnet)
+library(dplyr)
+library(tidyr)
+# define seed
+proj.seed <- 202202
+```
+
+# Data Prep
+
+```{r}
+data <- read_csv("data/protests.csv") %>% 
+  mutate(ptype = ifelse(ptype == "Peaceful protest", 0,
+                        ifelse(ptype == "Protest with intervention", 1,
+                               ifelse(ptype == "Excessive force against protesters",2,NA)))) %>%
+  select(-c(iso3, fatalities, date, geop, region, country, location, latitude, longitude, actor1, assoc1, inter1, actor2, assoc2, inter2, interaction, admin1, admin2, admin3, source, source_scale, notes, `...1`))
+
+# remove years for which there is no wdi data yet
+# and observations for which countries don't have electricity -> 
+## countries likely don't have values for other indicators
+
+data <- data %>% 
+  filter(year < 2021) %>% 
+  filter(is.na(EG.ELC.ACCS.ZS) == F)
+
+data_samp <- data.frame(sample_n(data, 20000))
+
+# colSums(is.na(data_samp))
+# confirmation that all of our variables have NA's somewhere
+# okay to have NA's; end product is decision tree, which is NA-friendly
+dsna <- data_samp[, colSums(is.na(data_samp)) == 0]
+```
+
+## Model Prep
+
+```{r data_samp x, y}
+#  set up data with x and y values
+
+x <- data_samp %>% select(-ptype)
+y <- data_samp$ptype
+
+grid = 10^seq(10, -2, length = 500)
+```
+
+```{r split}
+# create train and test dataf
+train <- data_samp[data_samp$year < 2019, ]
+test <- data_samp[data_samp$year >= 2019, ]
+
+# create x and y values for training and test data
+x_train <- as.matrix(train %>% select(-ptype))
+x_test <- as.matrix(test %>% select(-ptype))
+y_train <- train$ptype
+y_test <- test$ptype
+```
+
+# LASSO Model
+
+```{r}
+set.seed(proj.seed)
+
+# create a lasso model with training data
+lasso_mod = glmnet(x_train, y_train, alpha = 1, lambda = grid)
+
+plot(lasso_mod) 
+```
+
+```{r}
+set.seed(proj.seed)
+
+# fit model with cross validation on training data - the same as was done in earlier question
+cv.out = cv.glmnet(x_train, y_train, alpha = 1, nfolds = 10)
+
+# plot model
+plot(cv.out)
+
+# find the best lambda - minimze MSE
+bestlam = cv.out$lambda.min
+
+# predict
+lasso_pred = predict(lasso_mod, s = bestlam, newx = x_test)
+
+# calculate mse value
+mse <- mean((lasso_pred - y_test)^2)
+mse
+```
+
+## Model Export
+
+```{r}
+library(tidymodels)
+
+tidymod <- tidy(cv.out$glmnet.fit)
+unique(tidymod$term)
+
+data <- data %>% select(ptype, year, timep, 
+                        electricity = EG.ELC.ACCS.ZS,
+                        birthrate = SP.DYN.CBRT.IN,
+                        deathrate = SP.DYN.CDRT.IN,
+                        fertility = SP.DYN.TFRT.IN, 
+                        lifeexpf = SP.DYN.LE00.FE.IN,
+                        lifeexpm = SP.DYN.LE00.MA.IN,
+                        lifeexptotal = SP.DYN.LE00.IN,
+                        popgrowth = SP.POP.GROW,
+                        poptotal = SP.POP.TOTL,
+                        energydepletion = NY.ADJ.DNGY.CD,
+                        mineraldepletion = NY.ADJ.DMIN.CD)
+
+write.csv(data, file = "plasso.csv")
+```
