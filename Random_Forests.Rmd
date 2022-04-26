@@ -30,6 +30,8 @@ pdata <- read.csv("plasso.csv") %>% na.omit
 ```
 
 ```{r}
+set.seed(proj.seed)
+
 # logistic model (for comparison)
 logistic_mod <- logistic_reg() %>%
   set_engine("glm") 
@@ -68,9 +70,5 @@ tibble(error = house_forest$fit$err.rate[, "OOB"],
   ggplot(aes(x = trees, y = error)) +
   geom_line() +
   theme_classic()
-```
-
-```{r}
-
 ```
 
