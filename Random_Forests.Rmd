@@ -13,13 +13,6 @@ library(rpart.plot)
 library(randomForest) 
 library(infer) 
 
-library(caret)
-library(ROCR) 
-library(pROC) 
-library(stepPlr) 
-library(doMC) 
-library(xtable) 
-
 rm(list=ls())
 
 # define seed
@@ -56,7 +49,7 @@ house_region_tree <- fit(tree_mod,
                     data = pdata)
 
 hrtfitdf <- house_region_tree$fit %>%
-  prp(extra = 6, varlen = 0, faclen = 0)
+  prp(extra = 3, varlen = 0, faclen = 0)
 
 # forest model
 forest_mod <- rand_forest() %>%
@@ -73,8 +66,3 @@ tibble(error = house_forest$fit$err.rate[, "OOB"],
   geom_line() +
   theme_classic()
 ```
-
-```{r}
-
-```
-
